@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "raft-stereo"
+version = "0.1.0"
+description = ""
+package-mode=false
+authors = ["cile98 <jovan.cicvaric@yahoo.com>"]
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+opencv-python = "^4.11.0.86"
+onnxruntime = "^1.21.0"
+onnx = "^1.17.0"
+scikit-learn = "^1.6.1"
+torchvision = "^0.21.0"
+torch = "^2.6.0"
+opt-einsum = "^3.4.0"
+onnxsim = "^0.4.36"
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+ruff = "^0.9.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
