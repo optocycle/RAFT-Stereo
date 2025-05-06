@@ -1117,15 +1117,14 @@ test = ["Cython", "array-api-strict (>=2.0,<2.1.1)", "asv", "gmpy2", "hypothesis
 
 [[package]]
 name = "setuptools"
-version = "78.1.0"
+version = "80.3.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "python_version >= \"3.12\""
 files = [
-    {file = "setuptools-78.1.0-py3-none-any.whl", hash = "sha256:3e386e96793c8702ae83d17b853fb93d3e09ef82ec62722e61da5cd22376dcd8"},
-    {file = "setuptools-78.1.0.tar.gz", hash = "sha256:18fd474d4a82a5f83dac888df697af65afa82dec7323d09c3e37d1f14288da54"},
+    {file = "setuptools-80.3.1-py3-none-any.whl", hash = "sha256:ea8e00d7992054c4c592aeb892f6ad51fe1b4d90cc6947cc45c45717c40ec537"},
+    {file = "setuptools-80.3.1.tar.gz", hash = "sha256:31e2c58dbb67c99c289f51c16d899afedae292b978f8051efaf6262d8212f927"},
 ]
 
 [package.extras]
@@ -1348,4 +1347,4 @@ markers = {dev = "python_version < \"3.11\""}
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "927cd8dc56d27eff566cb4d5667846da1231b4c30f762541d6d4d0f78f66fdf1"
+content-hash = "0f34a29b2d73c3ebbce7e7f62573fd742e7f54df1cd23b83b047f29fb8c6e430"
