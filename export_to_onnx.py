@@ -138,7 +138,7 @@ if __name__ == "__main__":
         "--mixed_precision", action="store_true", help="use mixed precision"
     )
     parser.add_argument(
-        "--simplify", action=bool, help="simplify the onnx model", default=True
+        "--simplify", type=bool, help="simplify the onnx model", default=True
     )
     args = parser.parse_args()
 
