@@ -83,8 +83,8 @@ def export_onnx(args):
 
         with torch.no_grad():
             sample_input = (
-                torch.zeros(1, 3, 520, 616).to(device),
-                torch.zeros(1, 3, 520, 616).to(device),
+                torch.zeros(1, 3, *args.input_size).to(device),
+                torch.zeros(1, 3, *args.input_size).to(device),
                 args.valid_iters,
                 None,
                 True,
@@ -114,6 +114,8 @@ def export_onnx(args):
         config_path = "raft.pbtxt"
         with open(config_path, "r") as f:
             config_pbtxt = f.read()
+        config_pbtxt = config_pbtxt.replace("<VAL1>", str(args.input_size[0]))
+        config_pbtxt = config_pbtxt.replace("<VAL2>", str(args.input_size[1]))
         with open(os.path.join(config_save_path, "config.pbtxt"), "w") as f:
             f.write(config_pbtxt)
 
@@ -139,6 +141,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--simplify", type=bool, help="simplify the onnx model", default=True
+    )
+    parser.add_argument(
+        "--input_size",
+        type=tuple,
+        default=(520, 616),
     )
     args = parser.parse_args()
 

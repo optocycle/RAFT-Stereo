@@ -6,19 +6,19 @@ input [
   {
     name: "left"
     data_type: TYPE_FP32
-    dims: [ 3, 520, 616 ]
+    dims: [ 3, <VAL1>, <VAL2> ]
   },
   {
     name: "right"
     data_type: TYPE_FP32
-    dims: [ 3, 520, 616 ]
+    dims: [ 3, <VAL1>, <VAL2> ]
   }
 ]
 output [
   {
     name: "upscaled_disparity"
     data_type: TYPE_FP32
-    dims: [ 1, 520, 616]
+    dims: [ 1, <VAL1>, <VAL2>]
   }
 ]
 dynamic_batching {}
