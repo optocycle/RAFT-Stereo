@@ -99,7 +99,7 @@ def export_onnx(args):
                 opset_version=16,  # the ONNX version to export the model to
                 do_constant_folding=True,  # whether to execute constant folding for optimization
                 input_names=["left", "right"],  # the model's input names
-                output_names=["disparty", "upscaled_disparity"],
+                output_names=["disparity", "upscaled_disparity"],
                 dynamic_axes={"left": {0: "batch_size"}, "right": {0: "batch_size"}},
             )
         # optional: save a simplified version of the model
