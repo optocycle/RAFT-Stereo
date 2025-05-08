@@ -18,6 +18,8 @@ torch = "^2.6.0"
 opt-einsum = "^3.4.0"
 onnxsim = "^0.4.36"
 setuptools = "^80.3.1"
+mlflow = "^2.22.0"
+dotenv = "^0.9.9"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"

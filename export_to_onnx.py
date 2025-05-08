@@ -1,54 +1,64 @@
 import argparse
 import torch
-from pathlib import Path
 from core.raft_stereo import RAFTStereo
 from onnxsim import simplify
 import onnx
 import os
+import tempfile
+from triton_flavor import log_model
+from mlflow_utils import get_or_create_experiment
+import mlflow
+
+experiment_id = get_or_create_experiment("raft_stereo")
+mlflow.set_experiment(experiment_id=experiment_id)
+
+MODEL_CONFIG = {
+    "middlebury": {
+        "hidden_dims": [128, 128, 128],
+        "context_norm": "batch",
+        "n_downsample": 2,
+        "corr_levels": 4,
+        "corr_radius": 4,
+        "n_gru_layers": 3,
+        "shared_backbone": False,
+        "slow_fast_gru": False,
+        "corr_implementation": "reg",
+        "mixed_precision": False,
+    },
+    "eth3d": {
+        "hidden_dims": [128, 128, 128],
+        "context_norm": "batch",
+        "n_downsample": 2,
+        "corr_levels": 4,
+        "corr_radius": 4,
+        "n_gru_layers": 3,
+        "shared_backbone": False,
+        "slow_fast_gru": False,
+        "corr_implementation": "reg",
+        "mixed_precision": False,
+    },
+    "realtime": {
+        "hidden_dims": [128, 128, 128],
+        "context_norm": "batch",
+        "n_downsample": 3,
+        "corr_levels": 4,
+        "corr_radius": 4,
+        "n_gru_layers": 2,
+        "shared_backbone": True,
+        "slow_fast_gru": True,
+        "corr_implementation": "reg",
+        "mixed_precision": True,
+    },
+}
 
 
 def export_onnx(args):
-    model_configs = {
-        "middlebury": {
-            "hidden_dims": [128, 128, 128],
-            "context_norm": "batch",
-            "n_downsample": 2,
-            "corr_levels": 4,
-            "corr_radius": 4,
-            "n_gru_layers": 3,
-            "shared_backbone": True,
-            "slow_fast_gru": False,
-            "corr_implementation": "reg",
-            "mixed_precision": False,
-        },
-        "eth3d": {
-            "hidden_dims": [128, 128, 128],
-            "context_norm": "batch",
-            "n_downsample": 2,
-            "corr_levels": 4,
-            "corr_radius": 4,
-            "n_gru_layers": 3,
-            "shared_backbone": False,
-            "slow_fast_gru": False,
-            "corr_implementation": "reg",
-            "mixed_precision": False,
-        },
-        "realtime": {
-            "hidden_dims": [128, 128, 128],
-            "context_norm": "batch",
-            "n_downsample": 3,
-            "corr_levels": 4,
-            "corr_radius": 4,
-            "n_gru_layers": 2,
-            "shared_backbone": True,
-            "slow_fast_gru": True,
-            "corr_implementation": "reg",
-            "mixed_precision": True,
-        },
-    }
 
-    if args.model_name in model_configs:
-        for key, value in model_configs[args.model_name].items():
+    model_name = (
+        args.restore_ckpt.split("/")[-1].split(".")[0].split("-")[-1]
+    )  # ckpt is named raft-<dataset_name>.pth
+    if model_name in MODEL_CONFIG:
+        for key, value in MODEL_CONFIG[model_name].items():
             setattr(args, key, value)
     else:
         raise ValueError("Invalid model name. Choose from: middlebury, realtime, eth3d")
@@ -60,49 +70,64 @@ def export_onnx(args):
     model.to(device)
     model.eval()
 
-    output_directory = Path(args.output_directory)
-    output_directory.mkdir(exist_ok=True)
-
-    model_filename = "raft-stereo-sceneflow-520-616.onnx"
-
-    with torch.no_grad():
-        sample_input = (
-            torch.zeros(1, 3, 520, 616).to(device),
-            torch.zeros(1, 3, 520, 616).to(device),
-            args.valid_iters,
-            None,
-            True,
+    with tempfile.TemporaryDirectory() as output_dir:
+        model_save_path = os.path.join(
+            output_dir,
+            "models",
+            "model",
+            "1",
         )
-        torch.onnx.export(
-            model,  # model being run
-            sample_input,  # model input (or a tuple for multiple inputs)
-            os.path.join(
-                args.output_directory, model_filename
-            ),  # where to save the model (can be a file or file-like object)
-            export_params=True,  # store the trained parameter weights inside the model file
-            opset_version=16,  # the ONNX version to export the model to
-            do_constant_folding=True,  # whether to execute constant folding for optimization
-            input_names=["left", "right"],  # the model's input names
-            output_names=["disparity", "upscaled_disparity"],
-        )
+        config_save_path = os.path.join(output_dir, "models", "model")
+        os.makedirs(model_save_path, exist_ok=True)
+        os.makedirs(config_save_path, exist_ok=True)
+
+        with torch.no_grad():
+            sample_input = (
+                torch.zeros(1, 3, 520, 616).to(device),
+                torch.zeros(1, 3, 520, 616).to(device),
+                args.valid_iters,
+                None,
+                True,
+            )
+            torch.onnx.export(
+                model,  # model being run
+                sample_input,  # model input (or a tuple for multiple inputs)
+                os.path.join(
+                    model_save_path, "model.onnx"
+                ),  # where to save the model (can be a file or file-like object)
+                export_params=True,  # store the trained parameter weights inside the model file
+                opset_version=16,  # the ONNX version to export the model to
+                do_constant_folding=True,  # whether to execute constant folding for optimization
+                input_names=["left", "right"],  # the model's input names
+                output_names=["disparty", "upscaled_disparity"],
+                dynamic_axes={"left": {0: "batch_size"}, "right": {0: "batch_size"}},
+            )
         # optional: save a simplified version of the model
-        stereo_onnx_model = onnx.load(
-            os.path.join(args.output_directory, model_filename)
-        )  # load onnx model
-        stereo_model_simp, stereo_check = simplify(stereo_onnx_model)
-        assert stereo_check, "Simplified stereo model could not be validated"
-        onnx.save(
-            stereo_model_simp,
-            os.path.join(args.output_directory, "simplified-" + model_filename),
+        if args.simplify:
+            stereo_onnx_model = onnx.load(
+                os.path.join(model_save_path, "model.onnx")
+            )  # load onnx model
+
+            stereo_model_simp, stereo_check = simplify(stereo_onnx_model)
+            assert stereo_check, "Simplified stereo model could not be validated"
+            onnx.save(stereo_model_simp, os.path.join(model_save_path, "model.onnx"))
+        config_path = "raft.pbtxt"
+        with open(config_path, "r") as f:
+            config_pbtxt = f.read()
+        with open(os.path.join(config_save_path, "config.pbtxt"), "w") as f:
+            f.write(config_pbtxt)
+
+        log_model(
+            config_save_path,
+            artifact_path="models",
+            await_registration_for=10,
         )
+        mlflow.log_params(args.__dict__)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--restore_ckpt", help="restore checkpoint", required=True)
-    parser.add_argument(
-        "--output_directory", help="directory to save output", default="out"
-    )
     parser.add_argument(
         "--valid_iters",
         type=int,
@@ -113,10 +138,8 @@ if __name__ == "__main__":
         "--mixed_precision", action="store_true", help="use mixed precision"
     )
     parser.add_argument(
-        "--model_name", type=str, default="middlebury", help="model name"
+        "--simplify", action=bool, help="simplify the onnx model", default=True
     )
-    # Architecture choices (this is fixed by the model)
-
     args = parser.parse_args()
 
     export_onnx(args)
