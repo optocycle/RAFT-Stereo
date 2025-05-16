@@ -111,8 +111,7 @@ def export_onnx(args):
             stereo_model_simp, stereo_check = simplify(stereo_onnx_model)
             assert stereo_check, "Simplified stereo model could not be validated"
             onnx.save(stereo_model_simp, os.path.join(model_save_path, "model.onnx"))
-        config_path = "raft.pbtxt"
-        with open(config_path, "r") as f:
+        with open("raft.pbtxt", "r") as f:
             config_pbtxt = f.read()
         config_pbtxt = config_pbtxt.replace("<VAL1>", str(args.input_size[0]))
         config_pbtxt = config_pbtxt.replace("<VAL2>", str(args.input_size[1]))
