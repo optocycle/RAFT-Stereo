@@ -19,6 +19,7 @@ class RaftStereoTraced(nn.Module):
     Its purpose is to call the underlying model in test_mode and extract only the
     final, upscaled disparity map, creating a simple, single-tensor output.
     """
+
     def __init__(self, underlying_model, valid_iters):
         super().__init__()
         self.model = underlying_model
@@ -53,7 +54,7 @@ def export_final_torchscript(args):
             setattr(args, key, value)
     else:
         raise ValueError(f"Config for '{model_name}' not found.")
-    
+
     pytorch_model = RAFTStereo(args)
     model_dp = torch.nn.DataParallel(pytorch_model, device_ids=[0])
     model_dp.load_state_dict(torch.load(args.restore_ckpt))
@@ -71,10 +72,16 @@ def export_final_torchscript(args):
         os.makedirs(config_save_path, exist_ok=True)
 
         with torch.no_grad():
-            sample_input_left = torch.randint(0, 256, (1, 3, *args.input_size), dtype=torch.float32, device=device)
-            sample_input_right = torch.randint(0, 256, (1, 3, *args.input_size), dtype=torch.float32, device=device)
-            
-            traced_script_module = torch.jit.trace(wrapper, (sample_input_left, sample_input_right))
+            sample_input_left = torch.randint(
+                0, 256, (1, 3, *args.input_size), dtype=torch.float32, device=device
+            )
+            sample_input_right = torch.randint(
+                0, 256, (1, 3, *args.input_size), dtype=torch.float32, device=device
+            )
+
+            traced_script_module = torch.jit.trace(
+                wrapper, (sample_input_left, sample_input_right)
+            )
             traced_script_module.save(os.path.join(model_save_path, "model.pt"))
             print("Successfully exported final TorchScript model.")
 
@@ -82,8 +89,10 @@ def export_final_torchscript(args):
             with open("raft_torchscript.pbtxt", "r") as f:
                 config_pbtxt = f.read()
         except FileNotFoundError:
-            raise FileNotFoundError("A 'template.pbtxt' file is required in the same directory.")
-        
+            raise FileNotFoundError(
+                "A 'template.pbtxt' file is required in the same directory."
+            )
+
         # Ensure platform is set for TorchScript
         h, w = args.input_size
         config_pbtxt = config_pbtxt.replace("<VAL1>", str(h))
@@ -91,7 +100,7 @@ def export_final_torchscript(args):
 
         with open(os.path.join(config_save_path, "config.pbtxt"), "w") as f:
             f.write(config_pbtxt)
-            
+
         log_model(
             config_save_path,
             artifact_path="models",
@@ -100,15 +109,26 @@ def export_final_torchscript(args):
         mlflow.log_params(args.__dict__)
 
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Final export pipeline for RAFT-Stereo to TorchScript.")
-    parser.add_argument("--restore_ckpt", help="Path to model checkpoint", required=True)
-    parser.add_argument("--input_size", type=int, nargs=2, default=(960, 1024), help="Input image size H W")
-    parser.add_argument("--valid_iters", type=int, default=16, help="Number of GRU iterations")
-    
+    parser = argparse.ArgumentParser(
+        description="Final export pipeline for RAFT-Stereo to TorchScript."
+    )
+    parser.add_argument(
+        "--restore_ckpt", help="Path to model checkpoint", required=True
+    )
+    parser.add_argument(
+        "--input_size",
+        type=int,
+        nargs=2,
+        default=(960, 1024),
+        help="Input image size H W",
+    )
+    parser.add_argument(
+        "--valid_iters", type=int, default=16, help="Number of GRU iterations"
+    )
+
     # The script will automatically populate other necessary model args from MODEL_CONFIG
     args, _ = parser.parse_known_args()
     args.input_size = tuple(args.input_size)
-    
+
     export_final_torchscript(args)
