@@ -97,7 +97,8 @@ def export_final_torchscript(args):
             artifact_path="models",
             await_registration_for=10,
         )
-        print("Successfully logged final model to MLflow.")
+        mlflow.log_params(args.__dict__)
+
 
 
 if __name__ == "__main__":
