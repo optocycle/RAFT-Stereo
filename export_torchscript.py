@@ -7,7 +7,7 @@ import tempfile
 from triton_flavor import log_model
 from mlflow_utils import get_or_create_experiment
 import mlflow
-from .export_to_onnx import MODEL_CONFIG
+from export_to_onnx import MODEL_CONFIG
 
 experiment_id = get_or_create_experiment("raft_stereo")
 mlflow.set_experiment(experiment_id=experiment_id)
