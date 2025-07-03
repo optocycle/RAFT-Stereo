@@ -144,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--input_size",
         type=tuple,
-        default=(520, 616),
+        default=(960, 1024),
     )
     args = parser.parse_args()
 
