@@ -57,9 +57,9 @@ def export_final_torchscript(args):
 
     pytorch_model = RAFTStereo(args)
     model_dp = torch.nn.DataParallel(pytorch_model, device_ids=[0])
-    model_dp.load_state_dict(torch.load(args.restore_ckpt))
-    pytorch_model = model_dp.module
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_dp.load_state_dict(torch.load(args.restore_ckpt, map_location=device))
+    pytorch_model = model_dp.module
     pytorch_model.to(device)
     pytorch_model.eval()
     wrapper = RaftStereoTraced(pytorch_model, args.valid_iters)
