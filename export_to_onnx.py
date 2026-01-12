@@ -64,7 +64,8 @@ def export_onnx(args):
         raise ValueError("Invalid model name. Choose from: middlebury, realtime, eth3d")
 
     model = torch.nn.DataParallel(RAFTStereo(args), device_ids=[0])
-    model.load_state_dict(torch.load(args.restore_ckpt))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.load_state_dict(torch.load(args.restore_ckpt, map_location=device))
     model = model.module
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
